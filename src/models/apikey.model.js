@@ -18,10 +18,6 @@ var apiKeySchema = new mongoose.Schema(
       type: [String],
       required: true,
       enum: ['000', '111', '222']
-    },
-    password: {
-      type: String,
-      required: true
     }
   },
   {

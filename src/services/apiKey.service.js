@@ -1,5 +1,9 @@
+const { createApiKey } = require('../models/repositories/apiKey.repo')
+
 class ApiKeyService {
-  static;
+  static createApiKey = (body) => {
+    return createApiKey(body)
+  }
 }
 
 module.exports = ApiKeyService

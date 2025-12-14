@@ -1,7 +1,8 @@
 const { creaTokenPair } = require('../auth/authUtils')
 const bcrypt = require('bcrypt')
 const {
-  findOneAndUpdateKeyToken
+  findOneAndUpdateKeyToken,
+  findByUserId
 } = require('../models/repositories/keyToken.repo')
 const {
   findOneShopByEmail,
@@ -10,7 +11,53 @@ const {
 const { getIntoData } = require('../utils')
 const KeyTokenService = require('./keytoken.service')
 const crypto = require('crypto')
+
 class AccessService {
+  static login = async ({ email, password, refreshToken = null }) => {
+    try {
+      /* Check if shop exist */
+      // compare password
+      // create privatekey , publickey
+      // insert or update  privatekey , publickey keytonken collection keytokenModel
+      // create acctoken , refreshtoken
+      // return
+      const holderShop = await findOneShopByEmail({ email })
+      if (!holderShop) throw new Error('Error: Shop not register')
+
+      const match = await bcrypt.compare(password, holderShop.password)
+      if (!match) throw new Error('Error: Password incorrect')
+
+      const privateKey = crypto.randomBytes(64).toString('hex')
+      const publicKey = crypto.randomBytes(64).toString('hex')
+
+      const keyStore = await KeyTokenService.createkeyToken({
+        userId: holderShop._id,
+        privateKey,
+        publicKey,
+        refreshToken
+      })
+      if (!keyStore) throw new Error('Not found  keytoken !')
+
+      const token = await creaTokenPair(
+        { userId: holderShop._id, email },
+        publicKey,
+        privateKey
+      )
+      return {
+        code: 200,
+        metadata: {
+          shop: getIntoData({
+            fields: ['_id', 'name', 'email'],
+            object: holderShop
+          }),
+          token: token
+        }
+      }
+    } catch (error) {
+      throw new Error(error.message)
+    }
+  }
+
   static signUp = async ({ name, email, password }) => {
     try {
       const holderShop = await findOneShopByEmail({ email })
@@ -47,6 +94,47 @@ class AccessService {
       }
     } catch (error) {
       throw new Error(error.message)
+    }
+  }
+
+  static refreshToken = async ({ userId, refreshToken }) => {
+    const keyStore = await findByUserId(userId)
+    if (!keyStore) throw new Error('Shop not registered!')
+    // TODO refresh token nên renew mỗi lần sử dụng
+    // check refresh token đã bị revoke chưa
+    // nếu rồi thì logout user đó
+    // renew refresh token cũng nên revoke khi logout
+    if (refreshToken) {
+      try {
+        const decodeUser = JWT.verify(refreshToken, keyStore.privateKey)
+        if (userId !== decodeUser.userId)
+          throw new Error('Invalid user token request!')
+        // check refresh token có bị revoke chưa
+        if (keyStore.refreshTokenUsed.includes(refreshToken))
+          throw new Error('Refresh token revoked!')
+        // revoke refresh token
+        const newRefreshTokenUsed = keyStore.refreshTokenUsed.push(refreshToken)
+        revokeRefreshTokenByUserId(userId, newRefreshTokenUsed)
+        // renew refresh token
+        const { refreshToken: newRefreshToken } = await creaTokenPair(
+          {
+            userId: decodeUser.userId
+          },
+          keyStore.publicKey,
+          keyStore.privateKey
+        )
+        req.keyStore = keyStore
+        req.user = decodeUser
+        req.refreshToken = newRefreshToken
+        return {
+          code: 200,
+          metadata: {
+            token: token
+          }
+        }
+      } catch (error) {
+        throw new Error(error.message)
+      }
     }
   }
 }
