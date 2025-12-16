@@ -10,7 +10,7 @@ class KeyTokenService {
     refreshToken
   }) => {
     const filter = { user: userId },
-      update = { publicKey, privateKey, refreshTokenUsed: [], refreshToken },
+      update = { publicKey, privateKey, refreshToken },
       options = { upsert: true, new: true }
     const token = await findOneAndUpdateKeyToken(filter, update, options)
     return token ? token.publicKey : null

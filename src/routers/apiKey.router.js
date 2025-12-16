@@ -4,5 +4,6 @@ const ApiKeyController = require('../controllers/apiKey.controller')
 const asyncHandler = require('../helpers/asyncHandler')
 const router = express.Router()
 router.post('/', asyncHandler(ApiKeyController.createApiKey))
+router.post('/refresh-token', asyncHandler(ApiKeyController.createApiKey))
 
 module.exports = router

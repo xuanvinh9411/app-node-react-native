@@ -1,16 +1,17 @@
 const { creaTokenPair } = require('../auth/authUtils')
 const bcrypt = require('bcrypt')
-const {
-  findOneAndUpdateKeyToken,
-  findByUserId
-} = require('../models/repositories/keyToken.repo')
+const { findByUserId } = require('../models/repositories/keyToken.repo')
 const {
   findOneShopByEmail,
   createShop
 } = require('../models/repositories/shop.repo')
+const {
+  revokeRefreshTokenByUserId
+} = require('../models/repositories/keyToken.repo')
 const { getIntoData } = require('../utils')
 const KeyTokenService = require('./keytoken.service')
 const crypto = require('crypto')
+const JWT = require('jsonwebtoken')
 
 class AccessService {
   static login = async ({ email, password, refreshToken = null }) => {
@@ -30,19 +31,20 @@ class AccessService {
       const privateKey = crypto.randomBytes(64).toString('hex')
       const publicKey = crypto.randomBytes(64).toString('hex')
 
-      const keyStore = await KeyTokenService.createkeyToken({
-        userId: holderShop._id,
-        privateKey,
-        publicKey,
-        refreshToken
-      })
-      if (!keyStore) throw new Error('Not found  keytoken !')
-
       const token = await creaTokenPair(
         { userId: holderShop._id, email },
         publicKey,
         privateKey
       )
+
+      const keyStore = await KeyTokenService.createkeyToken({
+        userId: holderShop._id,
+        privateKey,
+        publicKey,
+        refreshToken: token.refreshToken
+      })
+      if (!keyStore) throw new Error('Not found  keytoken !')
+
       return {
         code: 200,
         metadata: {
@@ -114,18 +116,16 @@ class AccessService {
           throw new Error('Refresh token revoked!')
         // revoke refresh token
         const newRefreshTokenUsed = keyStore.refreshTokenUsed.push(refreshToken)
-        revokeRefreshTokenByUserId(userId, newRefreshTokenUsed)
+        console.log(`newRefreshTokenUsed :${newRefreshTokenUsed}`)
+        await revokeRefreshTokenByUserId(userId, keyStore.refreshTokenUsed)
         // renew refresh token
-        const { refreshToken: newRefreshToken } = await creaTokenPair(
+        const token = await creaTokenPair(
           {
             userId: decodeUser.userId
           },
           keyStore.publicKey,
           keyStore.privateKey
         )
-        req.keyStore = keyStore
-        req.user = decodeUser
-        req.refreshToken = newRefreshToken
         return {
           code: 200,
           metadata: {

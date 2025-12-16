@@ -1,3 +1,4 @@
+const { convertToObjectIdMongodb } = require('../../utils')
 const keyTokenModel = require('../keytoken.model')
 
 const findOneAndUpdateKeyToken = async (filter, update, options) => {
@@ -10,7 +11,7 @@ const findByUserId = async (userId) => {
 
 const revokeRefreshTokenByUserId = async (userId, refreshTokenUsed) => {
   return await keyTokenModel.findOneAndUpdate(
-    { user: userId },
+    { user: convertToObjectIdMongodb(userId) },
     { refreshTokenUsed: refreshTokenUsed }
   )
 }

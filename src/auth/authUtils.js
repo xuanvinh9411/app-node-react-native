@@ -7,12 +7,7 @@ const {
   findByUserId,
   revokeRefreshTokenByUserId
 } = require('../models/repositories/keyToken.repo')
-const HEADER = {
-  API_KEY: 'x-api-key',
-  CLIENT_ID: 'x-client-id',
-  AUTHORIZATION: 'authorization',
-  REFRESHTOKEN: 'x-rtoken-id'
-}
+const { HEADER } = require('../utils/const')
 
 const creaTokenPair = async (payload, publicKey, privateKey) => {
   try {
@@ -49,39 +44,6 @@ const authentication = asyncHandler(async (req, res, next) => {
 
   const keyStore = await findByUserId(userId)
   if (!keyStore) throw new Error('Shop not registered!')
-
-  // TODO refresh token nên renew mỗi lần sử dụng
-  // check refresh token đã bị revoke chưa
-  // nếu rồi thì logout user đó
-  // renew refresh token cũng nên revoke khi logout
-  // if (req.headers[HEADER.REFRESHTOKEN]) {
-  //   try {
-  //     const refreshToken = req.headers[HEADER.REFRESHTOKEN]
-  //     const decodeUser = JWT.verify(refreshToken, keyStore.privateKey)
-  //     if (userId !== decodeUser.userId)
-  //       throw new Error('Invalid user token request!')
-  //     // check refresh token có bị revoke chưa
-  //     if (keyStore.refreshTokenUsed.includes(refreshToken))
-  //       throw new Error('Refresh token revoked!')
-  //     // revoke refresh token
-  //     const newRefreshTokenUsed = keyStore.refreshTokenUsed.push(refreshToken)
-  //     revokeRefreshTokenByUserId(userId, newRefreshTokenUsed)
-  //     // renew refresh token
-  //     const { refreshToken: newRefreshToken } = await creaTokenPair(
-  //       {
-  //         userId: decodeUser.userId
-  //       },
-  //       keyStore.publicKey,
-  //       keyStore.privateKey
-  //     )
-  //     req.keyStore = keyStore
-  //     req.user = decodeUser
-  //     req.refreshToken = newRefreshToken
-  //     return next()
-  //   } catch (error) {
-  //     throw new Error(error.message)
-  //   }
-  // }
 
   const token = await req.headers[HEADER.AUTHORIZATION]
   if (!token) throw new Error('Invalid request!')
