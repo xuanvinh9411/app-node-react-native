@@ -22,16 +22,21 @@ class ProductService {
   static productRegistry = {}
 
   static registerProductType = (type, classRef) => {
-    console.log(`classRef`, classRef)
     ProductService.productRegistry[type] = classRef
   }
 
   static async createProduct(type, payload) {
     const productClass = ProductService.productRegistry[type]
-    console.log('productClass', productClass)
     if (!productClass) throw new Error('Invalid product type')
     const product = new productClass(payload)
-    return await product.createProduct()
+    return product.createProduct()
+  }
+
+  static async updateProduct(type, productId, payload) {
+    const productClass = ProductService.productRegistry[type]
+    if (!productClass) throw new Error('Invalid product type')
+    const product = new productClass(payload)
+    return product.updateProduct(productId)
   }
 }
 
@@ -57,7 +62,10 @@ class Product {
   }
 
   async createProduct(product_Id) {
-    const newProduct = await product.create({ ...this, _id: product_Id })
+    const newProduct = await product.create({
+      ...this,
+      _id: product_Id
+    })
     return newProduct
     // add Inventory
     // push Notification
@@ -75,8 +83,37 @@ class ClothingProduct extends Product {
     if (!newProduct) throw new Error('Create product error')
     return newProduct
   }
-}
 
+  async updateProduct(productId) {
+    const foundFurniture = await clothing.findOneAndUpdate(
+      {
+        _id: convertToObjectIdMongodb(productId),
+        product_shop: convertToObjectIdMongodb(this.product_shop)
+      },
+      {
+        ...this.product_attributes
+      }
+    )
+    if (!foundFurniture) throw new Error('Clothing not found')
+    const updatedProduct = await updateProductById({
+      _id: productId,
+      product_shop: convertToObjectIdMongodb(this.product_shop),
+      payload: {
+        product_name: this.product_name,
+        product_thumb: this.product_thumb,
+        product_description: this.product_description,
+        product_price: this.product_price,
+        product_quantity: this.product_quantity,
+        product_attributes: this.product_attributes
+      }
+    })
+    if (!updatedProduct) throw new Error('Update product error')
+    return updatedProduct
+  }
+}
+/*
+============================ElectronicProduct============================
+ */
 class ElectronicProduct extends Product {
   async createProduct() {
     const newElectronicProduct = await electronic.create({
@@ -89,8 +126,36 @@ class ElectronicProduct extends Product {
     if (!newProduct) throw new Error('Create product error')
     return newProduct
   }
-}
 
+  async updateProduct(productId) {
+    const foundFurniture = await electronic.findOneAndUpdate(
+      {
+        _id: convertToObjectIdMongodb(this.product_attributes._id),
+        product_shop: convertToObjectIdMongodb(this.product_shop)
+      },
+      {
+        ...this.product_attributes
+      }
+    )
+    if (!foundFurniture) throw new Error('Electronic not found')
+    const updatedProduct = await updateProductById({
+      productId: productId,
+      product_shop: convertToObjectIdMongodb(this.product_shop),
+      updateProductById: {
+        product_name: this.product_name,
+        product_thumb: this.product_thumb,
+        product_description: this.product_description,
+        product_price: this.product_price,
+        product_quantity: this.product_quantity
+      }
+    })
+    if (!updatedProduct) throw new Error('Update product error')
+    return updatedProduct
+  }
+}
+/*
+============================FurnitureProduct============================
+*/
 class FurnitureProduct extends Product {
   async createProduct() {
     const newFurnitureProduct = await funiture.create({
@@ -101,6 +166,32 @@ class FurnitureProduct extends Product {
     const newProduct = await super.createProduct(newFurnitureProduct._id)
     if (!newProduct) throw new Error('Create product error')
     return newProduct
+  }
+
+  async updateProduct(productId) {
+    const foundFurniture = await funiture.findOneAndUpdate(
+      {
+        _id: convertToObjectIdMongodb(this.product_attributes._id),
+        product_shop: convertToObjectIdMongodb(this.product_shop)
+      },
+      {
+        ...this.product_attributes
+      }
+    )
+    if (!foundFurniture) throw new Error('Furniture not found')
+    const updatedProduct = await updateProductById({
+      productId: productId,
+      product_shop: convertToObjectIdMongodb(this.product_shop),
+      updateProductById: {
+        product_name: this.product_name,
+        product_thumb: this.product_thumb,
+        product_description: this.product_description,
+        product_price: this.product_price,
+        product_quantity: this.product_quantity
+      }
+    })
+    if (!updatedProduct) throw new Error('Update product error')
+    return updatedProduct
   }
 }
 

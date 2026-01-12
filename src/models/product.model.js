@@ -12,7 +12,7 @@ const productSchema = new Schema(
     product_description: String,
     product_slug: String, // slug: tên đường dẫn
     product_price: { type: Number, required: true },
-    product_quantity: { type: String, required: true },
+    product_quantity: { type: Number, required: true },
     product_type: {
       type: String,
       required: true,

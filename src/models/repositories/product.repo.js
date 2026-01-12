@@ -84,6 +84,21 @@ const findProduct = async ({ product_id, unSelect }) => {
 const getProductById = async ({ product_id }) => {
   return await product.findById(product_id).lean()
 }
+
+const updateProductById = async ({ _id, product_shop, payload }) => {
+  return await product
+    .findOneAndUpdate(
+      {
+        _id: _id,
+        product_shop: product_shop
+      },
+      payload,
+      {
+        new: true
+      }
+    )
+    .lean()
+}
 module.exports = {
   queryProduct,
   findProductForShop,
@@ -92,5 +107,6 @@ module.exports = {
   unPublishProductByShop,
   findAllProducts,
   findProduct,
-  getProductById
+  getProductById,
+  updateProductById
 }
